@@ -6,8 +6,8 @@ const (
 	PacketC2S_Submit    = "submit"
 	PacketS2C_Success   = "success"
 	PacketS2C_Print     = "print"
-	PacketC2S_Ping      = "ping"
-	PacketS2C_Pong      = "pong"
+	PacketS2C_Ping      = "ping"
+	PacketC2S_Pong      = "pong"
 )
 
 type C2S_Handshake struct {

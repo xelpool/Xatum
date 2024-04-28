@@ -1,12 +1,15 @@
 # Xatum Protocol Definition
 
-Packets are separated by \n
+All the Xatum connections are secured by TLS. Self-signed certificates are accepted, but the miner
+can show the certificate fingerprint to the user or verify it via configuration for protection
+against MITM attacks.
+
+Packets are separated by `\n`.
 A packet is formed by a "method string", followed by tilde ("~") and then the JSON message.
-This reduces overhead.
 
 ## Connection operation
 
-1. Client connects via TCP
+1. Client connects via TCP with TLS.
 
 2. Client sends handshake packet with JSON
 
@@ -85,13 +88,15 @@ print~{
 }
 ```
 
-### C2S ping packet
-Ideally sent by client every minute or so, can be used to measure latency and keep connection alive.
+### S2C ping packet
+Sent by server, can be used to measure latency and check if connection is alive.
 ```
 ping~{}
 ```
-### S2C pong packet
-A reply by server back to the client.
+
+### C2S pong packet
+A reply to the ping packet. If the client does not send the packet, server may interrupt the
+connection.
 ```
 pong~{}
 ```
@@ -99,11 +104,6 @@ pong~{}
 ## Drafts
 These features aren't yet implemented into software, but are open to discussion and may, or may not,
 be added in a future version.
-
-### [DRAFT] Encryption
-Mandatory encryption using x25519 key exchange and AES cipher for fast encryption/decryption.
-
-AES will be in CTR mode. Other details are yet to be defined.
 
 ### [DRAFT] S2C redirect packet
 Used to redirect to another server address. Useful for pool-side load balancing.

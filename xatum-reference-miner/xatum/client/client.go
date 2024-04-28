@@ -2,6 +2,8 @@ package client
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"crypto/tls"
 	"encoding/json"
 	"net"
 	"strings"
@@ -30,11 +32,20 @@ func NewClient(poolAddr string) (*Client, error) {
 		Success: make(chan xatum.S2C_Success, 1),
 	}
 
-	conn, err := net.Dial("tcp", cl.PoolAddress)
+	conn, err := tls.Dial("tcp", cl.PoolAddress, &tls.Config{
+		InsecureSkipVerify: true, // accept self-signed certificates
+	})
 	cl.conn = conn
 	if err != nil {
 		log.Warnf("connection failed: %s", err)
 		return nil, err
+	}
+
+	certs := conn.ConnectionState().PeerCertificates
+
+	log.Info("connection has", len(certs), "certificate(s)")
+	for _, v := range certs {
+		log.Infof("certificate fingerprint %x", sha256.Sum256(v.Signature))
 	}
 
 	return cl, nil
@@ -95,6 +106,8 @@ func (cl *Client) Connect() {
 				log.Errf(PREFIX+" %s", pData.Msg)
 			}
 
+		} else if pack == xatum.PacketS2C_Ping {
+			cl.Send("pong", map[string]any{})
 		} else {
 			log.Warnf("Unknown packet %s", pack)
 		}
@@ -115,6 +128,8 @@ func (c *Client) Send(name string, a any) error {
 
 // Client MUST be locked before calling this
 func (cl *Client) SendBytes(data []byte) error {
+	log.Net(">>>", string(data))
+
 	_, err := cl.conn.Write(append(data, '\n'))
 	if err != nil {
 		return err
